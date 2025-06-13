@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Annual Bike Parking Schedule</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* bg-gray-900 */
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .accordion-button svg {
+            transition: transform 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-gray-200 antialiased">
+
+    <div class="container mx-auto px-4 py-8 md:py-12">
+        <header class="text-center mb-10">
+            <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+                <h1 class="text-3xl md:text-4xl font-bold text-white">Annual Bike Parking Schedule</h1>
+                <div id="live-clock" class="text-xl md:text-2xl font-mono bg-gray-800 text-cyan-400 px-4 py-1 rounded-lg border border-gray-700">
+                    00:00:00
+                </div>
+            </div>
+            <p class="text-lg text-gray-400 mt-2">A fair rotation for all team members throughout the year.</p>
+        </header>
+
+        <main>
+            <!-- Today and Tomorrow Info Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                <!-- Today's Card -->
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <h2 class="text-xl font-semibold text-cyan-400 mb-4">Today's Parking</h2>
+                    <div id="today-details" class="space-y-3">
+                        <p class="text-gray-500">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Tomorrow's Card -->
+                <div id="tomorrow-card" class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <h2 class="text-xl font-semibold text-purple-400 mb-4">Tomorrow's Parking</h2>
+                    <div id="tomorrow-details" class="space-y-3">
+                         <p class="text-gray-500">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full Schedule Accordion -->
+            <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700">
+                 <h2 class="text-xl font-semibold text-white p-6 border-b border-gray-700">Yearly Schedule</h2>
+                <div id="schedule-accordion" class="divide-y divide-gray-700">
+                    <!-- JS will populate the monthly accordions here -->
+                </div>
+            </div>
+        </main>
+
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>Designed for efficient parking management.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CONFIGURATION ---
+            const members = ['Akhil', 'Arjun Reeja', 'Arjun V K', 'Chanthuraj', 'Dayanitta', 'Eby', 'Rishil', 'Shehmil', 'Sumesh'];
+            const year = new Date().getFullYear();
+            
+            // This data would normally come from a live API call.
+            const todayWeather = {
+                forecastType: "Evening Forecast",
+                condition: "Thunderstorm",
+                high: 27,
+                low: 27, // Evening temp
+                feelsLike: 31,
+                wind: 13, // km/h
+                icon: `<svg class="w-10 h-10 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 16.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM19.5 16.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM12 2.5a4.5 4.5 0 00-4.5 4.5v.5a5 5 0 00-.25 9.975h13.5A5 5 0 0017 7.5v-.5A4.5 4.5 0 0012 2.5zM12 13.5l-2.5 4.5h5L12 13.5z"></path></svg>`
+            };
+
+            const tomorrowWeather = {
+                forecastType: "Tomorrow's Forecast",
+                condition: "Showers",
+                high: 28,
+                low: 26,
+                feelsLike: 33,
+                wind: 19, // km/h
+                icon: `<svg class="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 15a4 4 0 004 4h9a5 5 0 10-.25-9.975A4.5 4.5 0 0012 2.5a4.5 4.5 0 00-4.5 4.5v.5A4.5 4.5 0 003 15z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 19v1m4-1v1m4-1v1"></path></svg>`
+            };
+
+            // --- DATA GENERATION ---
+            const generateYearlySchedule = () => {
+                const yearlyData = {};
+                let rotationIndex = 0;
+                const getNextMembers = (count) => {
+                    const result = [];
+                    for (let i = 0; i < count; i++) {
+                        result.push(members[rotationIndex % members.length]);
+                        rotationIndex++;
+                    }
+                    return result;
+                };
+                for (let month = 0; month < 12; month++) {
+                    const workingDays = [];
+                    const date = new Date(year, month, 1);
+                    while (date.getMonth() === month) {
+                        const dayOfWeek = date.getDay();
+                        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                            workingDays.push(new Date(date));
+                        }
+                        date.setDate(date.getDate() + 1);
+                    }
+                    yearlyData[month] = workingDays.map(d => {
+                        const dayAssignments = getNextMembers(4);
+                        return { date: d, slot1: dayAssignments[0], slot2: dayAssignments[1], backup1: dayAssignments[2], backup2: dayAssignments[3] };
+                    });
+                }
+                return yearlyData;
+            };
+
+            const yearlySchedule = generateYearlySchedule();
+
+            // --- DATE & TIME LOGIC ---
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentDate = today.getDate();
+
+            const updateClock = () => {
+                const clockElement = document.getElementById('live-clock');
+                if (clockElement) {
+                    const now = new Date();
+                    const options = { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
+                    const timeString = now.toLocaleTimeString('en-IN', options);
+                    clockElement.textContent = timeString;
+                }
+            };
+            
+            const calculateRemainingSlots = (schedule, startDate) => {
+                const remaining = {};
+                members.forEach(m => remaining[m] = 0);
+
+                for (let month = 0; month < 12; month++) {
+                    const monthData = schedule[month];
+                    monthData.forEach(day => {
+                        const dayDate = new Date(day.date);
+                        if (dayDate > startDate) {
+                            if (remaining[day.slot1] !== undefined) remaining[day.slot1]++;
+                            if (remaining[day.slot2] !== undefined) remaining[day.slot2]++;
+                        }
+                    });
+                }
+                return remaining;
+            };
+
+
+            // --- UI RENDERING ---
+            const createDetailLine = (label, value, valueColorClass) => `
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">${label}</span>
+                    <span class="font-semibold ${valueColorClass}">${value || 'N/A'}</span>
+                </div>`;
+
+            const findDayData = (dateToFind) => {
+                const monthData = yearlySchedule[dateToFind.getMonth()];
+                if (!monthData) return null;
+                return monthData.find(d => {
+                    const dDate = new Date(d.date);
+                    return dDate.getDate() === dateToFind.getDate() && dDate.getMonth() === dateToFind.getMonth() && dDate.getFullYear() === dateToFind.getFullYear();
+                });
+            };
+            
+            const findNextWorkingDayData = (currentDate) => {
+                 let nextDay = new Date(currentDate);
+                 for(let i=0; i<7; i++){
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    if(nextDay.getDay() >= 1 && nextDay.getDay() <= 5){
+                        const dayData = findDayData(nextDay);
+                        if(dayData) return dayData;
+                    }
+                 }
+                 return null;
+            };
+            
+            const populateInfoCard = (elementId, dayData, colors, defaultText, weatherData, remainingSlots) => {
+                const container = document.getElementById(elementId);
+                if (!dayData) {
+                    container.innerHTML = `<p class="text-gray-500">${defaultText}</p>`;
+                    return;
+                }
+
+                let weatherHtml = '';
+                if (weatherData) {
+                    const tempDisplay = weatherData.high === weatherData.low 
+                        ? `Temp: ${weatherData.high}°C` 
+                        : `Temp: ${weatherData.low}° / ${weatherData.high}°C`;
+
+                    weatherHtml = `
+                    <div class="mt-4 pt-4 border-t border-gray-700/50">
+                        <div class="flex items-start gap-4">
+                            <div>${weatherData.icon}</div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-lg text-white">${weatherData.forecastType}: ${weatherData.condition}</p>
+                                <div class="text-sm text-gray-400 grid grid-cols-2 gap-x-4">
+                                    <span>${tempDisplay}</span>
+                                    <span>Feels like: ${weatherData.feelsLike}°C</span>
+                                    <span>Wind: ${weatherData.wind} km/h</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+
+                let parkingLeftHtml = '';
+                if (remainingSlots) {
+                    const person1 = dayData.slot1;
+                    const person2 = dayData.slot2;
+                    const slotsLeft1 = (remainingSlots[person1] || 0) + 1;
+                    const slotsLeft2 = (remainingSlots[person2] || 0) + 1;
+
+                    parkingLeftHtml = `
+                        <div class="mt-3 pt-3 border-t border-gray-700/50 text-xs text-gray-400 space-y-1">
+                            <p><span class="font-semibold text-gray-200">${person1}</span> has <span class="text-purple-300 font-bold">${slotsLeft1}</span> parking slots left this year.</p>
+                            <p><span class="font-semibold text-gray-200">${person2}</span> has <span class="text-purple-300 font-bold">${slotsLeft2}</span> parking slots left this year.</p>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML = `
+                    <p class="text-sm text-gray-500 mb-2">${dayData.date.toDateString()}</p>
+                    ${createDetailLine('Sloat 499:', dayData.slot1, colors.value1)}
+                    ${createDetailLine('Sloat 500:', dayData.slot2, colors.value2)}
+                    <div class="pt-2 border-t border-gray-700/50 mt-2">
+                        ${createDetailLine('Primary Backup:', dayData.backup1, 'text-gray-300')}
+                        ${createDetailLine('Secondary Backup:', dayData.backup2, 'text-gray-300')}
+                    </div>
+                    ${weatherHtml}
+                    ${parkingLeftHtml}`;
+            };
+
+            const renderAccordions = () => {
+                const accordionContainer = document.getElementById('schedule-accordion');
+                const dayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+                accordionContainer.innerHTML = Object.keys(yearlySchedule).map(monthIndex => {
+                    const monthData = yearlySchedule[monthIndex];
+                    if (monthData.length === 0) return '';
+                    const monthName = monthData[0].date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                    const isCurrentMonth = parseInt(monthIndex) === currentMonth;
+                    return `
+                        <div class="accordion-item">
+                            <button class="accordion-button w-full flex justify-between items-center text-left p-6 hover:bg-gray-700/50 transition-colors">
+                                <span class="text-lg font-semibold text-white">${monthName}</span>
+                                <svg class="w-6 h-6 ${isCurrentMonth ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div class="accordion-content bg-gray-900" style="${isCurrentMonth ? 'max-height: 2000px;' : ''}">
+                                <div class="overflow-x-auto p-2">
+                                    <table class="w-full text-left">
+                                        <thead class="bg-gray-700/50">
+                                            <tr>
+                                                <th class="p-3 font-semibold">Date</th><th class="p-3 font-semibold">Day</th><th class="p-3 font-semibold">Sloat 499</th>
+                                                <th class="p-3 font-semibold">Sloat 500</th><th class="p-3 font-semibold">Primary Backup</th><th class="p-3 font-semibold">Secondary Backup</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-700">
+                                        ${monthData.map(day => {
+                                            const isToday = day.date.getDate() === currentDate && day.date.getMonth() === currentMonth;
+                                            return `<tr class="hover:bg-gray-700/50 ${isToday ? 'bg-cyan-900/40' : ''}"><td class="p-3 font-medium ${isToday ? 'text-cyan-400' : ''}">${day.date.getDate()}</td><td class="p-3 text-gray-400">${dayFormatter.format(day.date)}</td><td class="p-3">${day.slot1}</td><td class="p-3">${day.slot2}</td><td class="p-3 text-gray-400">${day.backup1}</td><td class="p-3 text-gray-400">${day.backup2}</td></tr>`
+                                        }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('');
+            };
+            
+            // --- INITIALIZATION & EVENT LISTENERS ---
+            const todayData = findDayData(today);
+            const tomorrowData = findNextWorkingDayData(today);
+            const remainingSlots = calculateRemainingSlots(yearlySchedule, today);
+            
+            populateInfoCard('today-details', todayData, { value1: 'text-cyan-300', value2: 'text-cyan-300' }, 'Not a working day.', todayWeather, null);
+            populateInfoCard('tomorrow-details', tomorrowData, { value1: 'text-purple-300', value2: 'text-purple-300' }, 'No upcoming working day.', tomorrowWeather, remainingSlots);
+
+            renderAccordions();
+            
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            document.querySelectorAll('.accordion-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const content = button.nextElementSibling;
+                    const svg = button.querySelector('svg');
+                    const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+                    if (isOpen) {
+                        content.style.maxHeight = '0px';
+                        svg.classList.remove('rotate-180');
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                        svg.classList.add('rotate-180');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
