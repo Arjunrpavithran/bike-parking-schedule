@@ -72,6 +72,40 @@
             animation: move-bike 3.5s ease-in-out infinite;
             animation-delay: 0.5s;
         }
+        
+        /* --- Babe Animation --- */
+        @keyframes babe-bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0) scale(1); }
+            40% { transform: translateY(-10px) scale(1.1); }
+            60% { transform: translateY(-5px) scale(1.05); }
+        }
+        .babe-animation {
+            display: inline-block;
+            animation: babe-bounce 2s ease-in-out infinite;
+            animation-delay: 0.2s;
+        }
+        
+        /* --- Spinning Wheel --- */
+        #wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 20px auto;
+        }
+        #wheel-canvas {
+            transition: transform 5s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        #wheel-pointer {
+            position: absolute;
+            top: 50%;
+            right: -20px;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 15px 0 15px 30px;
+            border-color: transparent transparent transparent #f59e0b; /* amber-500 */
+        }
 
     </style>
 </head>
@@ -86,6 +120,23 @@
                 </div>
             </div>
             <p class="text-lg text-gray-400 mt-2">A fair rotation for all team members throughout the year.</p>
+            <!-- Filter Dropdowns -->
+            <div class="mt-6 max-w-lg mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="name-select" class="sr-only">Select Name</label>
+                    <select id="name-select" class="block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm">
+                        <option value="">All Members</option>
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div>
+                    <label for="month-select" class="sr-only">Select Month</label>
+                    <select id="month-select" class="block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm">
+                        <option value="">All Months</option>
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+            </div>
         </header>
 
         <main>
@@ -115,20 +166,24 @@
     </div>
     
     <div id="reassign-modal" class="modal fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 opacity-0 pointer-events-none z-50">
-        <div class="bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8 w-full max-w-md border border-gray-700 transform scale-95 transition-transform duration-300">
+        <div class="bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8 w-full max-w-lg border border-gray-700 transform scale-95 transition-transform duration-300">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold text-white">Parking Replacements</h3>
+                <h3 class="text-2xl font-bold text-white">Spin for Replacements!</h3>
                 <button id="close-modal-button" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
             </div>
-            <div id="modal-content" class="text-center"></div>
+            <div id="modal-content" class="text-center">
+                <!-- Spinning wheel will be injected here -->
+            </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- CONFIGURATION ---
-            const members = ['Akhil', 'Arjun Reeja', 'Arjun V K', 'Chanthuraj', 'Dayanitta', 'Eby', 'Rishil', 'Shehmil', 'Sumesh'];
+            const members = ['Akhil', 'Arjun Reeja', 'Arjun V K', 'Chanthuraj', 'Dayanitta', 'Eby', 'Kunuvava', 'Shehmil', 'Sumesh'];
             const year = new Date().getFullYear();
+            const nameSelect = document.getElementById('name-select');
+            const monthSelect = document.getElementById('month-select');
             
             // --- REAL-TIME WEATHER LOGIC ---
             const fetchWeatherData = async () => {
@@ -190,10 +245,9 @@
                     'Clear': `<svg class="w-10 h-10 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>`,
                     'Cloudy': `<svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 15a4 4 0 004 4h9a5 5 0 10-.25-9.975A4.5 4.5 0 0012 2.5C9.24 2.5 7 4.74 7 7.5v.5A4.5 4.5 0 003 15z"></path></svg>`,
                     'Fog': `<svg class="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 12h16.5M3.75 6.75h16.5M3.75 17.25h16.5" /></svg>`
-                 };
-                 return icons[condition] || icons['Cloudy'];
+                  };
+                  return icons[condition] || icons['Cloudy'];
             };
-
 
             // --- DATA GENERATION ---
             const generateYearlySchedule = () => {
@@ -258,17 +312,21 @@
             const findDayData = (dateToFind) => {
                 const monthData = yearlySchedule[dateToFind.getMonth()];
                 if (!monthData) return null;
-                return monthData.find(d => new Date(d.date).toDateString() === dateToFind.toDateString());
+                return monthData.find(d => 
+                    d.date.getFullYear() === dateToFind.getFullYear() &&
+                    d.date.getMonth() === dateToFind.getMonth() &&
+                    d.date.getDate() === dateToFind.getDate()
+                );
             };
             
             const findNextWorkingDayData = (currentDate) => {
                  let nextDay = new Date(currentDate);
                  for(let i=0; i<7; i++){
-                    nextDay.setDate(nextDay.getDate() + 1);
-                    if(nextDay.getDay() >= 1 && nextDay.getDay() <= 5){
-                        const dayData = findDayData(nextDay);
-                        if(dayData) return dayData;
-                    }
+                     nextDay.setDate(nextDay.getDate() + 1);
+                     if(nextDay.getDay() >= 1 && nextDay.getDay() <= 5){
+                         const dayData = findDayData(nextDay);
+                         if(dayData) return dayData;
+                     }
                  }
                  return null;
             };
@@ -279,6 +337,9 @@
                 if (isTomorrowCard && value === 'Dayanitta') {
                     const bikeSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-lime-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 17.5A2.5 2.5 0 107.5 12.5a2.5 2.5 0 000 5z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 17.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" /><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 15h9M7.5 15L6 9h12l-1.5 6M9.5 9l2.5-4 2.5 4" /></svg>`;
                     specialAnimation = `<span class="inline-block bike-animation ml-2">${bikeSVG}</span>`;
+                } else if (isTomorrowCard && value === 'Kunuvava') {
+                    const babeEmoji = '👶';
+                    specialAnimation = `<span class="inline-block babe-animation ml-2">${babeEmoji}</span>`;
                 }
                 return `
                     <div class="flex justify-between items-center">
@@ -337,10 +398,10 @@
                 
                 const reassignButtonHtml = (elementId === 'today-details') ? `
                     <div class="mt-auto pt-4">
-                        <p class="text-xs text-gray-500 text-center mb-2">If members are unavailable:</p>
+                        <p class="text-xs text-gray-500 text-center mb-2">Need replacements for tomorrow?</p>
                         <button id="reassign-button" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" /></svg>
-                            Find Replacements
+                            Spin for Tomorrow's Replacements
                         </button>
                     </div>` : '';
                 
@@ -359,25 +420,37 @@
                     </div>
                     ${reassignButtonHtml}`;
                  if (elementId === 'today-details') {
-                     document.getElementById('reassign-button')?.addEventListener('click', handleReassignClick);
+                      document.getElementById('reassign-button')?.addEventListener('click', handleReassignClick);
                  }
             };
 
-            const renderAccordions = () => {
+            const renderAccordions = (scheduleToRender, searchName = '') => {
                 const accordionContainer = document.getElementById('schedule-accordion');
                 const dayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+                const query = searchName.toLowerCase().trim();
+                const isSearchResult = nameSelect.value !== '' || monthSelect.value !== '';
+
+                if (Object.keys(scheduleToRender).length === 0 && isSearchResult) {
+                    accordionContainer.innerHTML = `<div class="p-6 text-center text-gray-400">No duties found for the selected criteria.</div>`;
+                    return;
+                }
+
                 accordionContainer.innerHTML = Object.keys(yearlySchedule).map(monthIndex => {
-                    const monthData = yearlySchedule[monthIndex];
-                    if (monthData.length === 0) return '';
-                    const monthName = monthData[0].date.toLocaleString('default', { month: 'long', year: 'numeric' });
-                    const isCurrentMonth = parseInt(monthIndex) === currentMonth;
+                    const monthData = scheduleToRender[monthIndex];
+                    if (!monthData || monthData.length === 0) {
+                        return '';
+                    }
+
+                    const monthName = new Date(year, parseInt(monthIndex), 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+                    const shouldBeOpen = isSearchResult || (!isSearchResult && parseInt(monthIndex) === currentMonth);
+
                     return `
                         <div class="accordion-item">
                             <button class="accordion-button w-full flex justify-between items-center text-left p-6 hover:bg-gray-700/50 transition-colors">
                                 <span class="text-lg font-semibold text-white">${monthName}</span>
-                                <svg class="w-6 h-6 ${isCurrentMonth ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                <svg class="w-6 h-6 ${shouldBeOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
-                            <div class="accordion-content bg-gray-900" style="${isCurrentMonth ? 'max-height: 2000px;' : ''}">
+                            <div class="accordion-content bg-gray-900" style="${shouldBeOpen ? 'max-height: 2000px;' : ''}">
                                 <div class="overflow-x-auto p-2">
                                     <table class="w-full text-left">
                                         <thead class="bg-gray-700/50">
@@ -389,7 +462,21 @@
                                         <tbody class="divide-y divide-gray-700">
                                         ${monthData.map(day => {
                                             const isToday = day.date.getDate() === currentDate && day.date.getMonth() === currentMonth;
-                                            return `<tr class="hover:bg-gray-700/50 ${isToday ? 'bg-cyan-900/40' : ''}"><td class="p-3 font-medium ${isToday ? 'text-cyan-400' : ''}">${day.date.getDate()}</td><td class="p-3 text-gray-400">${dayFormatter.format(day.date)}</td><td class="p-3">${day.slot1}</td><td class="p-3">${day.slot2}</td><td class="p-3 text-gray-400">${day.backup1}</td><td class="p-3 text-gray-400">${day.backup2}</td></tr>`
+                                            const highlightName = (name) => {
+                                                if (query && name.toLowerCase().includes(query)) {
+                                                    const regex = new RegExp(`(${query})`, 'gi');
+                                                    return name.replace(regex, `<span class="bg-yellow-500 text-black px-1 rounded">$1</span>`);
+                                                }
+                                                return name;
+                                            };
+                                            return `<tr class="hover:bg-gray-700/50 ${isToday ? 'bg-cyan-900/40' : ''}">
+                                                    <td class="p-3 font-medium ${isToday ? 'text-cyan-400' : ''}">${day.date.getDate()}</td>
+                                                    <td class="p-3 text-gray-400">${dayFormatter.format(day.date)}</td>
+                                                    <td class="p-3">${highlightName(day.slot1)}</td>
+                                                    <td class="p-3">${highlightName(day.slot2)}</td>
+                                                    <td class="p-3 text-gray-400">${highlightName(day.backup1)}</td>
+                                                    <td class="p-3 text-gray-400">${highlightName(day.backup2)}</td>
+                                                  </tr>`
                                         }).join('')}
                                         </tbody>
                                     </table>
@@ -416,9 +503,10 @@
             
             // --- MODAL & REASSIGNMENT LOGIC ---
             const modal = document.getElementById('reassign-modal');
-            const modalBox = modal.querySelector('div');
+            const modalBox = modal.querySelector('.bg-gray-800');
             const closeModalButton = document.getElementById('close-modal-button');
             const modalContent = document.getElementById('modal-content');
+            
             const openModal = () => {
                 modal.classList.remove('opacity-0', 'pointer-events-none');
                 modalBox.classList.remove('scale-95');
@@ -428,26 +516,181 @@
                 modalBox.classList.add('scale-95');
             };
 
+            // --- SPINNING WHEEL LOGIC ---
+            let wheelCandidates = [];
+            let rotation = 0;
+            let primaryWinner = null;
+            let secondaryWinner = null;
+
+            const wheelColors = ["#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16", "#22c55e", "#10b981", "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef", "#ec4899"];
+
+            function drawWheel() {
+                const canvas = document.getElementById('wheel-canvas');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                const numOptions = wheelCandidates.length;
+                const arcSize = (2 * Math.PI) / numOptions;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = Math.min(centerX, centerY) - 5;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = '#374151'; // gray-700
+                ctx.lineWidth = 3;
+
+                for (let i = 0; i < numOptions; i++) {
+                    const angle = i * arcSize;
+                    ctx.fillStyle = wheelColors[i % wheelColors.length];
+
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, angle, angle + arcSize);
+                    ctx.lineTo(centerX, centerY);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.save();
+                    ctx.fillStyle = "white";
+                    ctx.font = "bold 14px Inter";
+                    ctx.translate(centerX + Math.cos(angle + arcSize / 2) * radius * 0.7, centerY + Math.sin(angle + arcSize / 2) * radius * 0.7);
+                    ctx.rotate(angle + arcSize / 2 + Math.PI / 2);
+                    const text = wheelCandidates[i];
+                    ctx.fillText(text, -ctx.measureText(text).width / 2, 0);
+                    ctx.restore();
+                }
+            }
+            
+            function spinTheWheel() {
+                const spinButton = document.getElementById('spin-button');
+                spinButton.disabled = true;
+                spinButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+                const degrees = Math.floor(5000 + Math.random() * 5000);
+                rotation += degrees;
+                
+                const canvas = document.getElementById('wheel-canvas');
+                canvas.style.transform = `rotate(${rotation}deg)`;
+
+                setTimeout(() => {
+                    const actualRotation = rotation % 360;
+                    const arcSizeDegrees = 360 / wheelCandidates.length;
+                    const winningSegmentIndex = Math.floor((360 - actualRotation) / arcSizeDegrees) % wheelCandidates.length;
+                    const winner = wheelCandidates[winningSegmentIndex];
+
+                    if (!primaryWinner) {
+                        primaryWinner = winner;
+                        document.getElementById('primary-winner').innerHTML = `Primary: <span class="text-green-400 font-bold">${winner}</span>`;
+                        wheelCandidates = wheelCandidates.filter(c => c !== winner);
+                        spinButton.textContent = 'Spin for Secondary';
+                        if(wheelCandidates.length > 0) {
+                            spinButton.disabled = false;
+                            spinButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                        drawWheel();
+                    } else {
+                        secondaryWinner = winner;
+                         document.getElementById('secondary-winner').innerHTML = `Secondary: <span class="text-yellow-400 font-bold">${winner}</span>`;
+                         spinButton.textContent = 'Done!';
+                         spinButton.onclick = closeModal;
+                         spinButton.disabled = false;
+                         spinButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                }, 5000); // Corresponds to the transition duration in CSS
+            }
+
             const handleReassignClick = () => {
                 const tomorrowData = findNextWorkingDayData(new Date());
-                const exclusionList = tomorrowData ? [tomorrowData.slot1, tomorrowData.slot2, tomorrowData.backup1, tomorrowData.backup2] : [];
-                const candidatePool = members.filter(member => !exclusionList.includes(member));
+                const exclusionList = [];
+
+                if (!tomorrowData) {
+                    modalContent.innerHTML = `<p class="text-yellow-400">There is no upcoming working day to find replacements for.</p>`;
+                    openModal();
+                    return;
+                }
+
+                exclusionList.push(tomorrowData.slot1, tomorrowData.slot2, tomorrowData.backup1, tomorrowData.backup2);
                 
-                if (candidatePool.length < 2) {
-                    modalContent.innerHTML = `<p class="text-red-400">Not enough members for replacements.</p>`;
+                wheelCandidates = members.filter(member => !exclusionList.includes(member));
+                primaryWinner = null;
+                secondaryWinner = null;
+                rotation = 0;
+                
+                if (wheelCandidates.length < 2) {
+                    modalContent.innerHTML = `<p class="text-red-400">Not enough members available for a spin for tomorrow's parking.</p>`;
                 } else {
-                    for (let i = candidatePool.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [candidatePool[i], candidatePool[j]] = [candidatePool[j], candidatePool[i]];
-                    }
                     modalContent.innerHTML = `
-                        <p class="text-gray-400 mb-4">The following members have been selected:</p>
-                        <div class="space-y-3 text-lg">
-                            <div class="bg-gray-700 p-3 rounded-lg">${createDetailLine('Primary:', candidatePool[0], 'text-green-400')}</div>
-                            <div class="bg-gray-700 p-3 rounded-lg">${createDetailLine('Secondary:', candidatePool[1], 'text-yellow-400')}</div>
-                        </div>`;
+                        <p class="mb-2 text-gray-400">Finding replacements for tomorrow's parking (${tomorrowData.date.toDateString()}).<br>Replacing: ${tomorrowData.slot1} & ${tomorrowData.slot2}.</p>
+                        <div id="wheel-container">
+                            <canvas id="wheel-canvas" width="300" height="300"></canvas>
+                            <div id="wheel-pointer"></div>
+                        </div>
+                        <div class="my-4 space-y-2 text-lg">
+                            <p id="primary-winner">Primary: <span class="text-gray-500">...</span></p>
+                            <p id="secondary-winner">Secondary: <span class="text-gray-500">...</span></p>
+                        </div>
+                        <button id="spin-button" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200">
+                            Spin for Primary
+                        </button>
+                    `;
+                    document.getElementById('spin-button').onclick = spinTheWheel;
+                    const canvas = document.getElementById('wheel-canvas');
+                    canvas.style.transform = 'rotate(0deg)'; // Reset rotation
+                    drawWheel();
                 }
                 openModal();
+            };
+
+            const handleFilterChange = () => {
+                const selectedName = nameSelect.value;
+                const selectedMonth = monthSelect.value;
+
+                if (!selectedName && !selectedMonth) {
+                    renderAccordions(yearlySchedule);
+                    return;
+                }
+
+                let scheduleToFilter = {};
+                if (selectedMonth) {
+                     scheduleToFilter = { [selectedMonth]: yearlySchedule[selectedMonth] };
+                } else {
+                    scheduleToFilter = { ...yearlySchedule };
+                }
+
+                if (selectedName) {
+                    const finalFilteredSchedule = {};
+                    Object.keys(scheduleToFilter).forEach(month => {
+                        const monthData = scheduleToFilter[month];
+                        const filteredMonthData = monthData.filter(day => 
+                            day.slot1 === selectedName ||
+                            day.slot2 === selectedName ||
+                            day.backup1 === selectedName ||
+                            day.backup2 === selectedName
+                        );
+
+                        if (filteredMonthData.length > 0) {
+                            finalFilteredSchedule[month] = filteredMonthData;
+                        }
+                    });
+                    scheduleToFilter = finalFilteredSchedule;
+                }
+
+                renderAccordions(scheduleToFilter, selectedName);
+            };
+
+            const populateDropdowns = () => {
+                members.forEach(member => {
+                    const option = document.createElement('option');
+                    option.value = member;
+                    option.textContent = member;
+                    nameSelect.appendChild(option);
+                });
+
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                monthNames.forEach((month, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = month;
+                    monthSelect.appendChild(option);
+                });
             };
             
             // --- INITIALIZATION ---
@@ -455,6 +698,7 @@
                 updateClock();
                 setInterval(updateClock, 1000);
                 
+                populateDropdowns();
                 const { todayWeather, tomorrowWeather } = await fetchWeatherData();
                 
                 const todayData = findDayData(today);
@@ -470,10 +714,14 @@
                 populateInfoCard('today-details', todayData, { value1: 'text-cyan-300', value2: 'text-cyan-300' }, 'Not a working day.', todayWeather, null);
                 populateInfoCard('tomorrow-details', tomorrowData, { value1: 'text-purple-300', value2: 'text-purple-300' }, 'No upcoming working day.', tomorrowWeather, remainingSlots);
 
-                renderAccordions();
+                renderAccordions(yearlySchedule);
                 
+                nameSelect.addEventListener('change', handleFilterChange);
+                monthSelect.addEventListener('change', handleFilterChange);
                 closeModalButton.addEventListener('click', closeModal);
-                modal.addEventListener('click', (e) => e.target === modal && closeModal());
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal();
+                });
             };
 
             initializeApp();
